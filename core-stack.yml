@@ -1,0 +1,61 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:v3.0
+    restart: always
+    networks:
+      - webgateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./traefik-acme-data:/etc/traefik/acme
+    command:
+      # Enable dashboard
+      - --api.dashboard=true
+      # Entrypoints
+      - --entrypoints=Name:http Address::80 Redirect.EntryPoint:https
+      - --entrypoints=Name:https Address::443 TLS
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,192.168.1.7
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      # Uncomment line below to use ACME staging dir
+      #- --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --providers.docker=true
+      - --log.level=debug
+      - --providers.docker.network=webgateway
+    labels:
+      # Dashboard config
+      - traefik.http.routers.traefik-dash.rule=Host(`traefik.${DOMAIN}`)
+      - traefik.http.routers.traefik-dash.service=api@internal
+      - traefik.http.routers.traefik-dash.middlewares=traefik-dash-auth
+      - traefik.http.routers.traefik-dash.tls=true
+      - traefik.http.routers.traefik-dash.tls.certResolver=letsencrypt
+      - traefik.http.middlewares.plain-to-www.redirectregex.regex=^https?://(?:www\.)?(.*)
+      - traefik.http.middlewares.plain-to-www.redirectregex.replacement=https://www.$1
+      - traefik.http.middlewares.traefik-dash-auth.basicauth.users=${TRAEFIK_USERS}
+
+  portainer:
+    image: portainer/portainer-ee:2.19.4-alpine
+    restart: always
+    networks:
+      - webgateway
+    volumes:
+      - ./portainer-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.http.routers.rtr-portainer.rule=Host(`portainer.${DOMAIN}`)"
+      - traefik.http.routers.rtr-portainer.tls=true
+      - traefik.http.routers.rtr-portainer.tls.certResolver=letsencrypt
+      - traefik.http.services.srv-portainer.loadbalancer.server.port=9000
+
+networks:
+  webgateway:
+    external: true
