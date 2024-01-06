@@ -1,0 +1,20 @@
+version: "3.0"
+services:
+  static:
+    image: nginx:1.25.3-alpine-slim
+    container_name: nginx
+    restart: unless-stopped
+    networks:
+      - default
+      - webgateway
+    volumes:
+      - /home/ubuntu/devbox-store/static:/usr/share/nginx/html:ro
+    labels:
+      - traefik.docker.network=webgateway
+      - traefik.http.routers.static.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.static.tls=true
+      - traefik.http.routers.static.tls.certResolver=letsencrypt
+      - traefik.http.services.static.loadbalancer.server.port=80
+networks:
+  webgateway:
+    external: true
