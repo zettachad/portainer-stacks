@@ -1,0 +1,46 @@
+version: "3.0"
+services:
+  synapse:
+    image: matrixdotorg/synapse
+    container_name: synapse
+    restart: unless-stopped
+    networks:
+      - default
+      - webgateway
+    volumes:
+      - /home/ubuntu/devbox-store/matrix:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - traefik.docker.network=webgateway
+      - traefik.http.routers.matrix.rule=Host(`${DOMAIN}`) && (PathPrefix(`/_matrix`) || PathPrefix(`/_synapse/client`))
+      - traefik.http.routers.matrix.service=matrix
+      - traefik.http.routers.matrix.tls=true
+      - traefik.http.routers.matrix.tls.certResolver=letsencrypt
+      - traefik.http.services.matrix.loadbalancer.server.port=8008
+      - traefik.http.middlewares.https-redirect.headers.customrequestheaders.X-Forwarded-Proto=https
+      - traefik.http.middlewares.https-redirect.headers.customrequestheaders.X-Forwarded-For=https://${DOMAIN}/
+      - traefik.http.routers.matrix.middlewares=https-redirect@docker
+      
+  db:
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: paswd_postgres
+      POSTGRES_USER: synapse_user
+      POSTGRES_DB: synapse
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    volumes:
+      - /home/ubuntu/devbox-store/matrix/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "synapse"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+
+networks:
+  webgateway:
+    external: true
