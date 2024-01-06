@@ -1,0 +1,21 @@
+version: "3.0"
+services:
+  privatebin:
+    image: privatebin/fs:stable
+    container_name: privatebin
+    restart: unless-stopped
+    networks:
+      - default
+      - webgateway
+    volumes:
+      - /home/ubuntu/devbox-store/privatebin/data:/srv/data
+      - /home/ubuntu/devbox-store/privatebin/conf.php:/srv/cfg/conf.php:ro
+    labels:
+      - traefik.docker.network=webgateway
+      - traefik.http.routers.privatebin.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.privatebin.tls=true
+      - traefik.http.routers.privatebin.tls.certResolver=letsencrypt
+      - traefik.http.services.privatebin.loadbalancer.server.port=8080
+networks:
+  webgateway:
+    external: true

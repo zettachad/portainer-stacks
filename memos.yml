@@ -1,0 +1,20 @@
+version: "3.0"
+services:
+  memos:
+    image: ghcr.io/usememos/memos:latest
+    container_name: memos
+    restart: unless-stopped
+    networks:
+      - default
+      - webgateway
+    volumes:
+      - /home/ubuntu/devbox-store/memos:/var/opt/memos
+    labels:
+      - traefik.docker.network=webgateway
+      - traefik.http.routers.memos.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.memos.tls=true
+      - traefik.http.routers.memos.tls.certResolver=letsencrypt
+      - traefik.http.services.memos.loadbalancer.server.port=5230
+networks:
+  webgateway:
+    external: true

@@ -1,0 +1,25 @@
+version: "3.0"
+services:
+  me:
+    # This is a workaround. Traefik needs a router to have a middleware
+    # busybox with shell command was the easiest and most lightweight
+    # container I could possibly make. It serves no purpose. The real deal
+    # is the middleware.
+    image: busybox:stable-uclibc
+    command: sh -c "while true; do { echo -e 'HTTP/1.1 200 OK\r\n'; echo 'smallest http server'; } | nc -l -p 80; done"
+    container_name: me
+    restart: unless-stopped
+    networks:
+      - default
+      - webgateway
+    labels:
+      - traefik.docker.network=webgateway
+      - traefik.http.routers.me.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.me.tls=true
+      - traefik.http.routers.me.tls.certResolver=letsencrypt
+      - traefik.http.services.me.loadbalancer.server.port=80
+      - traefik.http.routers.me.middlewares=plain-to-www
+
+networks:
+  webgateway:
+    external: true
