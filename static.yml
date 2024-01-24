@@ -11,7 +11,7 @@ services:
       - /home/ubuntu/devbox-store/static:/usr/share/nginx/html:ro
     labels:
       - traefik.docker.network=webgateway
-      - traefik.http.routers.static.rule=Host(`${DOMAIN}`, `${WKD_DOMAIN}`)
+      - "traefik.http.routers.static.rule=Host(`${DOMAIN}`) || Host(`${WKD_DOMAIN}`)"
       - traefik.http.routers.static.tls=true
       - traefik.http.routers.static.tls.certResolver=letsencrypt
       - traefik.http.services.static.loadbalancer.server.port=80
