@@ -14,8 +14,12 @@ services:
       - "traefik.http.routers.static.rule=Host(`${DOMAIN}`) || Host(`${WKD_DOMAIN}`)"
       - traefik.http.routers.static.tls=true
       - traefik.http.routers.static.tls.certResolver=letsencrypt
-      - "traefik.http.middlewares.cors.headers.customResponseHeaders.Access-Control-Allow-Origin=*"
-      - "traefik.http.routers.static.middlewares=cors"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolallowmethods=GET"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolallowheaders=*"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolalloworiginlist=*"
+      - "traefik.http.middlewares.corsheader.headers.accesscontrolmaxage=100"
+      - "traefik.http.middlewares.corsheader.headers.addvaryheader=true"
+      - "traefik.http.routers.static.middlewares=corsheader"
       - traefik.http.services.static.loadbalancer.server.port=80
 networks:
   webgateway:
