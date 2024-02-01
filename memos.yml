@@ -1,7 +1,7 @@
 version: "3.0"
 services:
   memos:
-    image: ghcr.io/usememos/memos:latest
+    image: neosmemo/memos:stable
     container_name: memos
     restart: unless-stopped
     networks:
